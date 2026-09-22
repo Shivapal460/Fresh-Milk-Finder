@@ -19,3 +19,7 @@ class VendorOut(VendorBase):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
+
+
+class VendorNearby(VendorOut):
+    distance_km: float
