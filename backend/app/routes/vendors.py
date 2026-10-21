@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from .. import models, schemas
 from ..database import get_db
 from ..services.geo import haversine_km
+from ..services.vendor_stats import to_vendor_out
 
 router = APIRouter(prefix="/vendors", tags=["Vendors"])
 
@@ -14,7 +15,7 @@ def create_vendor(vendor: schemas.VendorCreate, db: Session = Depends(get_db)):
     db.add(db_vendor)
     db.commit()
     db.refresh(db_vendor)
-    return db_vendor
+    return to_vendor_out(db, db_vendor)
 
 
 @router.get("/", response_model=list[schemas.VendorOut])
@@ -28,7 +29,7 @@ def list_vendors(
         query = query.filter(models.Vendor.milk_type == milk_type)
     if max_price is not None:
         query = query.filter(models.Vendor.price_per_litre <= max_price)
-    return query.all()
+    return [to_vendor_out(db, v) for v in query.all()]
 
 
 # NOTE: this route must stay ABOVE "/{vendor_id}"
@@ -51,7 +52,7 @@ def nearby_vendors(
     for v in query.all():
         distance = haversine_km(lat, lng, v.latitude, v.longitude)
         if distance <= radius:
-            data = schemas.VendorOut.model_validate(v).model_dump()
+            data = to_vendor_out(db, v)
             results.append(schemas.VendorNearby(**data, distance_km=round(distance, 2)))
 
     results.sort(key=lambda item: item.distance_km)
@@ -63,4 +64,4 @@ def get_vendor(vendor_id: int, db: Session = Depends(get_db)):
     vendor = db.query(models.Vendor).filter(models.Vendor.id == vendor_id).first()
     if vendor is None:
         raise HTTPException(status_code=404, detail="Vendor not found")
-    return vendor
+    return to_vendor_out(db, vendor)
