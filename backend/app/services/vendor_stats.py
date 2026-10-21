@@ -1,7 +1,7 @@
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from . import models, schemas
+from .. import models, schemas
 
 
 def to_vendor_out(db: Session, vendor: models.Vendor) -> dict:
