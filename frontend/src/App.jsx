@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import VendorForm from './VendorForm'
+import Reviews from './Reviews'
 
 const API = 'http://localhost:8000'
 
@@ -12,6 +13,7 @@ export default function App() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [searched, setSearched] = useState(false)
+  const [openId, setOpenId] = useState(null)
 
   const searchNearby = () => {
     setError('')
@@ -145,9 +147,24 @@ export default function App() {
                   )}
                 </div>
 
-                <p className="mt-2 text-sm text-gray-600">
-                  ⭐ {v.review_count > 0 ? `${v.average_rating} (${v.review_count} reviews)` : 'No reviews yet'}
-                </p>
+                <div className="mt-2 flex justify-between items-center">
+                  <p className="text-sm text-gray-600">
+                    ⭐{' '}
+                    {v.review_count > 0
+                      ? `${v.average_rating} (${v.review_count} ${v.review_count === 1 ? 'review' : 'reviews'})`
+                      : 'No reviews yet'}
+                  </p>
+                  <button
+                    onClick={() => setOpenId(openId === v.id ? null : v.id)}
+                    className="text-sm text-green-700 underline"
+                  >
+                    {openId === v.id ? 'Hide reviews' : 'Reviews'}
+                  </button>
+                </div>
+
+                {openId === v.id && (
+                  <Reviews vendorId={v.id} onChange={searchNearby} />
+                )}
               </div>
             ))}
           </div>
