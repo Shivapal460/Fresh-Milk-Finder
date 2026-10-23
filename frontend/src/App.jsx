@@ -2,7 +2,7 @@ import { useState } from 'react'
 import VendorForm from './VendorForm'
 import Reviews from './Reviews'
 
-const API = 'http://localhost:8000'
+const API = import.meta.env.VITE_API_URL || 'http://localhost:8000'
 
 export default function App() {
   const [tab, setTab] = useState('search')
