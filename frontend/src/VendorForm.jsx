@@ -2,6 +2,12 @@ import { useState } from 'react'
 
 const API = import.meta.env.VITE_API_URL || 'http://localhost:8000'
 
+const MILK_TYPES = [
+  { value: 'cow', label: 'Cow' },
+  { value: 'buffalo', label: 'Buffalo' },
+  { value: 'a2', label: 'A2' },
+]
+
 const emptyForm = {
   name: '',
   latitude: '',
@@ -12,13 +18,16 @@ const emptyForm = {
   home_delivery: false,
 }
 
+const fieldClass = 'w-full rounded-xl border border-line bg-white px-3.5 py-2.5 text-base'
+
 export default function VendorForm() {
   const [form, setForm] = useState(emptyForm)
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
   const [saving, setSaving] = useState(false)
 
-  const update = (field, value) => setForm({ ...form, [field]: value })
+  const update = (field, value) => setForm((f) => ({ ...f, [field]: value }))
+  const hasLocation = form.latitude !== '' && form.longitude !== ''
 
   const useMyLocation = () => {
     setError('')
@@ -29,7 +38,7 @@ export default function VendorForm() {
           latitude: pos.coords.latitude.toFixed(6),
           longitude: pos.coords.longitude.toFixed(6),
         })),
-      () => setError('Location permission denied.')
+      () => setError('Location is blocked. Allow location for this site in your browser and try again.')
     )
   }
 
@@ -37,8 +46,8 @@ export default function VendorForm() {
     e.preventDefault()
     setError('')
     setMessage('')
-    if (!form.latitude || !form.longitude) {
-      setError('Please set the vendor location first.')
+    if (!hasLocation) {
+      setError("Set the dairy's location first.")
       return
     }
     setSaving(true)
@@ -54,97 +63,136 @@ export default function VendorForm() {
         }),
       })
       if (!res.ok) throw new Error('Request failed')
-      setMessage('Vendor added successfully!')
+      setMessage('Dairy added. You can now find it from the Find milk tab.')
       setForm(emptyForm)
     } catch {
-      setError('Could not add vendor. Check the details and try again.')
+      setError('Could not add the dairy. Check every field and try again.')
     } finally {
       setSaving(false)
     }
   }
 
   return (
-    <form onSubmit={submit} className="space-y-3">
-      <input
-        required
-        placeholder="Vendor name"
-        value={form.name}
-        onChange={(e) => update('name', e.target.value)}
-        className="w-full border rounded p-2"
-      />
+    <form onSubmit={submit} className="mx-auto max-w-xl">
+      <h2 className="font-display text-2xl font-extrabold">Add a dairy</h2>
+      <p className="mt-1 text-muted">
+        Know a dairy that sells fresh milk? Add it so others nearby can find it.
+      </p>
 
-      <div className="grid grid-cols-2 gap-3">
-        <select
-          value={form.milk_type}
-          onChange={(e) => update('milk_type', e.target.value)}
-          className="border rounded p-2"
+      <div className="mt-6 space-y-5">
+        <div>
+          <label htmlFor="dairy-name" className="mb-1.5 block text-sm font-semibold">
+            Dairy name
+          </label>
+          <input
+            id="dairy-name"
+            required
+            value={form.name}
+            onChange={(e) => update('name', e.target.value)}
+            className={fieldClass}
+          />
+        </div>
+
+        <div>
+          <p className="mb-1.5 text-sm font-semibold">Milk type</p>
+          <div className="flex flex-wrap gap-2">
+            {MILK_TYPES.map((m) => (
+              <button
+                key={m.value}
+                type="button"
+                aria-pressed={form.milk_type === m.value}
+                onClick={() => update('milk_type', m.value)}
+                className={`rounded-full border px-4 py-2 text-sm font-semibold ${
+                  form.milk_type === m.value
+                    ? 'border-pasture bg-pasture text-white'
+                    : 'border-line bg-white hover:bg-meadow'
+                }`}
+              >
+                {m.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="grid gap-5 sm:grid-cols-2">
+          <div>
+            <label htmlFor="dairy-price" className="mb-1.5 block text-sm font-semibold">
+              Price per litre
+            </label>
+            <div className="relative">
+              <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-muted">
+                ₹
+              </span>
+              <input
+                id="dairy-price"
+                required
+                type="number"
+                min="1"
+                step="any"
+                value={form.price_per_litre}
+                onChange={(e) => update('price_per_litre', e.target.value)}
+                className={`${fieldClass} pl-8`}
+              />
+            </div>
+          </div>
+          <div>
+            <label htmlFor="dairy-time" className="mb-1.5 block text-sm font-semibold">
+              Milking time
+            </label>
+            <select
+              id="dairy-time"
+              value={form.milking_time}
+              onChange={(e) => update('milking_time', e.target.value)}
+              className={fieldClass}
+            >
+              <option value="morning">Morning</option>
+              <option value="evening">Evening</option>
+              <option value="morning and evening">Morning and evening</option>
+            </select>
+          </div>
+        </div>
+
+        <div className="rounded-xl border border-line bg-meadow p-4">
+          <p className="text-sm font-semibold">Dairy location</p>
+          <p className="mt-1 text-sm text-muted">
+            {hasLocation
+              ? `Saved: ${form.latitude}, ${form.longitude}`
+              : 'Stand at the dairy and tap the button, so people find it at the right spot.'}
+          </p>
+          <button
+            type="button"
+            onClick={useMyLocation}
+            className="mt-3 rounded-full border border-pasture px-4 py-2 text-sm font-semibold text-pasture hover:bg-white"
+          >
+            Use my current location
+          </button>
+        </div>
+
+        <label className="flex items-center gap-3">
+          <input
+            type="checkbox"
+            checked={form.home_delivery}
+            onChange={(e) => update('home_delivery', e.target.checked)}
+            className="h-5 w-5 accent-pasture"
+          />
+          <span>Offers home delivery</span>
+        </label>
+
+        <button
+          type="submit"
+          disabled={saving}
+          className="rounded-xl bg-pasture px-6 py-3 font-semibold text-white hover:bg-pasture-dark disabled:opacity-60"
         >
-          <option value="cow">Cow</option>
-          <option value="buffalo">Buffalo</option>
-        </select>
-        <input
-          required
-          type="number"
-          min="1"
-          placeholder="Price per litre (₹)"
-          value={form.price_per_litre}
-          onChange={(e) => update('price_per_litre', e.target.value)}
-          className="border rounded p-2"
-        />
+          {saving ? 'Adding...' : 'Add dairy'}
+        </button>
+
+        {message && <p className="font-semibold text-pasture">{message}</p>}
+        {error && (
+          <p role="alert" className="text-red-700">
+            {error}
+          </p>
+        )}
       </div>
-
-      <select
-        value={form.milking_time}
-        onChange={(e) => update('milking_time', e.target.value)}
-        className="w-full border rounded p-2"
-      >
-        <option value="morning">Morning</option>
-        <option value="evening">Evening</option>
-        <option value="morning and evening">Morning and evening</option>
-      </select>
-
-      <div className="grid grid-cols-2 gap-3">
-        <input
-          readOnly
-          placeholder="Latitude"
-          value={form.latitude}
-          className="border rounded p-2 bg-gray-50"
-        />
-        <input
-          readOnly
-          placeholder="Longitude"
-          value={form.longitude}
-          className="border rounded p-2 bg-gray-50"
-        />
-      </div>
-
-      <button
-        type="button"
-        onClick={useMyLocation}
-        className="w-full border border-green-600 text-green-700 rounded p-2 hover:bg-green-50"
-      >
-        📍 Use my current location
-      </button>
-
-      <label className="flex items-center gap-2">
-        <input
-          type="checkbox"
-          checked={form.home_delivery}
-          onChange={(e) => update('home_delivery', e.target.checked)}
-        />
-        Home delivery available
-      </label>
-
-      <button
-        type="submit"
-        disabled={saving}
-        className="w-full bg-green-600 text-white font-semibold rounded p-3 hover:bg-green-700 disabled:opacity-50"
-      >
-        {saving ? 'Saving...' : 'Add vendor'}
-      </button>
-
-      {message && <p className="text-green-700">{message}</p>}
-      {error && <p className="text-red-600">{error}</p>}
     </form>
   )
 }
