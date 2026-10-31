@@ -299,7 +299,7 @@ export default function App() {
                         </div>
                       </dl>
 
-                      <div className="mt-4 flex items-center justify-between gap-3 border-t border-line pt-4">
+                      <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-line pt-4">
                         <div className="flex items-center gap-2 text-sm">
                           <Stars value={v.average_rating || 0} />
                           <span className="text-muted">
@@ -310,12 +310,22 @@ export default function App() {
                               : 'No reviews yet'}
                           </span>
                         </div>
-                        <button
-                          onClick={() => setOpenId(openId === v.id ? null : v.id)}
-                          className="rounded-full border border-line px-4 py-1.5 text-sm font-semibold text-pasture hover:bg-meadow"
-                        >
-                          {openId === v.id ? 'Hide reviews' : 'Reviews'}
-                        </button>
+                        <div className="flex items-center gap-2">
+                          <a
+                            href={`https://www.google.com/maps/dir/?api=1&destination=${v.latitude},${v.longitude}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="rounded-full bg-pasture px-4 py-1.5 text-sm font-semibold text-white hover:bg-pasture-dark"
+                          >
+                            Get directions
+                          </a>
+                          <button
+                            onClick={() => setOpenId(openId === v.id ? null : v.id)}
+                            className="rounded-full border border-line px-4 py-1.5 text-sm font-semibold text-pasture hover:bg-meadow"
+                          >
+                            {openId === v.id ? 'Hide reviews' : 'Reviews'}
+                          </button>
+                        </div>
                       </div>
 
                       {openId === v.id && <Reviews vendorId={v.id} onChange={searchNearby} />}
